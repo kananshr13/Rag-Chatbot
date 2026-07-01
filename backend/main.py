@@ -8,7 +8,18 @@ import uuid
 
 from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEndpointEmbeddings
+from huggingface_hub import InferenceClient
+from langchain_core.embeddings import Embeddings
+
+class HFRouterEmbeddings(Embeddings):
+    def __init__(self, model: str, token: str):
+        self.client = InferenceClient(model=model, token=token, provider="hf-inference")
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [self.client.feature_extraction(t).tolist() for t in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.client.feature_extraction(text).tolist()
 from langchain_groq import ChatGroq
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
@@ -95,12 +106,12 @@ def _upsert_session(session_id: str, new_docs: list, source_label: str):
 
     if embeddings is None:
         print("Loading embeddings...", flush=True)
-        embeddings = HuggingFaceEndpointEmbeddings(
+        embeddings = HFRouterEmbeddings(
             model="sentence-transformers/all-MiniLM-L6-v2",
-            huggingfacehub_api_token=os.getenv("HF_TOKEN"),
+            token=os.getenv("HF_TOKEN"),
         )
         print("Embeddings loaded!", flush=True)
-        
+
     chunks = text_splitter.split_documents(new_docs)
     if session_id in sessions:
         sessions[session_id]["vectorstore"].add_documents(chunks)

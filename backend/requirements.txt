@@ -6,7 +6,7 @@ langchain-community==0.3.7
 langchain-groq==0.2.1
 langchain-huggingface==0.1.2
 faiss-cpu==1.8.0
-huggingface_hub==0.25.2
+huggingface_hub>=0.27.0
 pypdf==5.1.0
 beautifulsoup4==4.12.3
 requests==2.32.3
