@@ -6,10 +6,8 @@ import os
 import tempfile
 import uuid
 
-from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_groq import ChatGroq
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
@@ -31,10 +29,7 @@ app.add_middleware(
 sessions: dict = {}
 
 # ── Shared resources (loaded once) ───────────────────────────────────────────
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
-    model_kwargs={"device": "cpu"},
-)
+embeddings = None
 
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
@@ -91,9 +86,18 @@ class ChatResponse(BaseModel):
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
+from langchain_community.vectorstores import FAISS
 def _upsert_session(session_id: str, new_docs: list, source_label: str):
     """Add docs to an existing session's vectorstore or create a new one."""
+
+    global embeddings
+
+    if embeddings is None:
+        print("Loading embeddings...", flush=True)
+        embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+        print("Embeddings loaded!", flush=True)
+
+
     chunks = text_splitter.split_documents(new_docs)
     if session_id in sessions:
         sessions[session_id]["vectorstore"].add_documents(chunks)
@@ -116,7 +120,7 @@ def _upsert_session(session_id: str, new_docs: list, source_label: str):
 def root():
     return {"status": "RAG Chatbot API is running"}
 
-
+from langchain_community.document_loaders import PyPDFLoader
 @app.post("/ingest/pdf", response_model=IngestResponse)
 async def ingest_pdf(
     file: UploadFile = File(...),
@@ -150,7 +154,7 @@ async def ingest_pdf(
         chunk_count=chunk_count,
     )
 
-
+from langchain_community.document_loaders import WebBaseLoader
 @app.post("/ingest/url", response_model=IngestResponse)
 async def ingest_url(body: IngestURLRequest):
     session_id = body.session_id or str(uuid.uuid4())
