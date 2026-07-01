@@ -8,7 +8,7 @@ import uuid
 
 from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import FastEmbedEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from langchain_groq import ChatGroq
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
@@ -95,10 +95,12 @@ def _upsert_session(session_id: str, new_docs: list, source_label: str):
 
     if embeddings is None:
         print("Loading embeddings...", flush=True)
-        embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-en-v1.5")
+        embeddings = HuggingFaceEndpointEmbeddings(
+            model="sentence-transformers/all-MiniLM-L6-v2",
+            huggingfacehub_api_token=os.getenv("HF_TOKEN"),
+        )
         print("Embeddings loaded!", flush=True)
-
-
+        
     chunks = text_splitter.split_documents(new_docs)
     if session_id in sessions:
         sessions[session_id]["vectorstore"].add_documents(chunks)
