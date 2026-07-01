@@ -8,16 +8,16 @@ Built as a full-stack Retrieval-Augmented Generation (RAG) system: a FastAPI bac
 
 # App Preview 
 
-*** Main Page *** 
+#### Main Page  
 ![Main Page](screenshots/mainpage-ragchatbot.png)
 ---
-*** Configuration ***
+#### Configuration 
 ![Configuration](screenshots/configuration-ragchatbot.png)
 ---
-*** Upload URL/PDF ***
+#### Upload URL/PDF 
 ![Uploading url/pdf](screenshots/urlsearchinng-ragchatbot.png)
 ---
-*** Working Model ***
+#### Working Model 
 ![Conversation](screenshots/chat-ragchatbot.png)
 ---
 
