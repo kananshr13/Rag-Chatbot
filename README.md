@@ -4,7 +4,7 @@ Ask questions and get answers from your own documents. Upload PDFs or paste URLs
 
 Built as a full-stack Retrieval-Augmented Generation (RAG) system: a FastAPI backend that handles ingestion and retrieval, and a lightweight static frontend for interacting with it.
 
-# Live URL : https://retrieval-rag-chatbot.vercel.app
+### Live URL : https://retrieval-rag-chatbot.vercel.app
 
 # App Preview 
 
