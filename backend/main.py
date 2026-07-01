@@ -6,6 +6,7 @@ import os
 import tempfile
 import uuid
 
+from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_groq import ChatGroq
@@ -86,7 +87,7 @@ class ChatResponse(BaseModel):
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-from langchain_community.vectorstores import FAISS
+
 def _upsert_session(session_id: str, new_docs: list, source_label: str):
     """Add docs to an existing session's vectorstore or create a new one."""
 
