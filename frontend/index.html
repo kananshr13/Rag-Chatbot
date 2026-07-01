@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retrieval — Document Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #F7F6F3;
+      --surface:   #FFFFFF;
+      --ink:       #141414;
+      --ink-2:     #4A4A4A;
+      --ink-3:     #8A8A8A;
+      --border:    #E2E2DC;
+      --border-2:  #C8C8C0;
+      --accent:    #2B4FFF;
+      --accent-bg: #EEF1FF;
+      --danger:    #C0392B;
+      --mono:      'DM Mono', monospace;
+      --sans:      'Inter', sans-serif;
+      --radius:    4px;
+      --radius-lg: 8px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Utility ────────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+
+    input, textarea, button, select {
+      font-family: var(--sans);
+      font-size: 14px;
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       AUTH SCREEN
+    ════════════════════════════════════════════════════════════ */
+    #auth-screen {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Left panel — wordmark + context */
+    .auth-left {
+      width: 420px;
+      flex-shrink: 0;
+      background: var(--ink);
+      color: #fff;
+      padding: 56px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .auth-wordmark {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .auth-headline {
+      font-size: 32px;
+      font-weight: 300;
+      line-height: 1.25;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .auth-headline strong {
+      font-weight: 600;
+      display: block;
+    }
+
+    .auth-tagline {
+      font-size: 13px;
+      color: #8A8A8A;
+      line-height: 1.7;
+      margin-top: 20px;
+    }
+
+    .auth-footnote {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #555;
+      letter-spacing: 0.04em;
+    }
+
+    /* Right panel — form */
+    .auth-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    .auth-tab {
+      padding: 10px 0;
+      margin-right: 24px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-3);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .auth-tab.active {
+      color: var(--ink);
+      border-bottom-color: var(--ink);
+    }
+
+    .auth-form { display: flex; flex-direction: column; gap: 16px; }
+    .auth-form.hidden { display: none; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-2);
+      letter-spacing: 0.02em;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: var(--accent); }
+    .field input::placeholder { color: var(--ink-3); }
+
+    .field-error {
+      font-size: 11px;
+      color: var(--danger);
+      display: none;
+    }
+
+    .field-error.visible { display: block; }
+
+    .auth-submit {
+      width: 100%;
+      padding: 11px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 4px;
+    }
+
+    .auth-submit:hover { background: #2a2a2a; }
+
+    .auth-divider {
+      font-size: 11px;
+      color: var(--ink-3);
+      text-align: center;
+      margin: 4px 0;
+    }
+
+    .global-error {
+      padding: 10px 12px;
+      background: #FFF2F2;
+      border: 1px solid #F5C6C6;
+      border-radius: var(--radius);
+      font-size: 12px;
+      color: var(--danger);
+      display: none;
+    }
+
+    .global-error.visible { display: block; }
+
+    /* ════════════════════════════════════════════════════════════
+       CAPABILITY SELECTION SCREEN
+    ════════════════════════════════════════════════════════════ */
+    #capability-screen {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+    }
+
+    .cap-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .cap-eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 12px;
+    }
+
+    .cap-title {
+      font-size: 26px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+
+    .cap-title span { font-weight: 600; }
+
+    .cap-sub {
+      font-size: 13px;
+      color: var(--ink-3);
+      margin-top: 8px;
+    }
+
+    .cap-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      max-width: 780px;
+      width: 100%;
+      margin-bottom: 40px;
+    }
+
+    .cap-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 20px 20px 16px;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+      border-left: 3px solid transparent;
+      user-select: none;
+    }
+
+    .cap-card:hover {
+      border-color: var(--border-2);
+      border-left-color: var(--border-2);
+    }
+
+    .cap-card.selected {
+      border-color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .cap-card.selected .cap-card-check {
+      opacity: 1;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .cap-card.selected .cap-card-check::after {
+      display: block;
+    }
+
+    .cap-card-check {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border-2);
+      border-radius: 3px;
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      transition: all 0.15s;
+    }
+
+    .cap-card-check::after {
+      content: '';
+      display: none;
+      width: 4px;
+      height: 7px;
+      border: 2px solid #fff;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translate(2px, 0);
+      position: absolute;
+      top: 2px;
+      left: 4px;
+    }
+
+    .cap-card-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 10px;
+    }
+
+    .cap-card.selected .cap-card-tag {
+      color: var(--accent);
+    }
+
+    .cap-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .cap-card-desc {
+      font-size: 12px;
+      color: var(--ink-3);
+      line-height: 1.6;
+    }
+
+    .cap-card.selected .cap-card-desc {
+      color: var(--ink-2);
+    }
+
+    .cap-action {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cap-continue {
+      padding: 11px 28px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .cap-continue:hover { background: #2a2a2a; }
+    .cap-continue:disabled { background: var(--border-2); cursor: not-allowed; }
+
+    .cap-selection-note {
+      font-size: 12px;
+      color: var(--ink-3);
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       MAIN CHAT SCREEN
+    ════════════════════════════════════════════════════════════ */
+    #chat-screen {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .topbar-wordmark {
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    .topbar-sep {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+    }
+
+    .active-caps {
+      display: flex;
+      gap: 6px;
+    }
+
+    .cap-pill {
+      font-size: 11px;
+      font-family: var(--mono);
+      padding: 3px 8px;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border-radius: 2px;
+      letter-spacing: 0.03em;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--ink-2);
+    }
+
+    .user-avatar {
+      width: 26px;
+      height: 26px;
+      background: var(--ink);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .topbar-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--ink-2);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .topbar-btn:hover {
+      background: var(--bg);
+      border-color: var(--border-2);
+    }
+
+    /* Body */
+    .chat-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 12px;
+    }
+
+    /* Drop zone */
+    .dropzone {
+      border: 1px dashed var(--border-2);
+      border-radius: var(--radius);
+      padding: 20px 12px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .dropzone:hover, .dropzone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-bg);
+    }
+
+    .dropzone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dropzone-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-2);
+      margin-bottom: 3px;
+    }
+
+    .dropzone-sub {
+      font-size: 11px;
+      color: var(--ink-3);
+    }
+
+    /* URL input */
+    .url-field {
+      display: flex;
+      gap: 6px;
+    }
+
+    .url-field input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .url-field input:focus { border-color: var(--accent); }
+    .url-field input::placeholder { color: var(--ink-3); }
+
+    .url-add-btn {
+      padding: 8px 12px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .url-add-btn:hover { background: #2a2a2a; }
+
+    /* Sources */
+    .sidebar-sources {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+    }
+
+    .source-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .source-item:last-child { border-bottom: none; }
+
+    .source-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+
+    .source-name {
+      font-size: 11px;
+      color: var(--ink-2);
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    .source-type {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .no-sources-note {
+      font-size: 11px;
+      color: var(--ink-3);
+      font-style: italic;
+    }
+
+    /* Status strip */
+    .status-strip {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--ink-3);
+      background: var(--bg);
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--border-2);
+      flex-shrink: 0;
+    }
+
+    .status-strip.loading .status-dot { background: #F5A623; animation: pulse 1s infinite; }
+    .status-strip.success .status-dot { background: #27AE60; }
+    .status-strip.error   .status-dot { background: var(--danger); }
+
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* ── Chat main ── */
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+    /* Empty */
+    .empty-chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+    }
+
+    .empty-chat-label {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ink);
+    }
+
+    .empty-chat-sub {
+      font-size: 12px;
+      color: var(--ink-3);
+      max-width: 300px;
+      line-height: 1.6;
+    }
+
+    .empty-chat-line {
+      width: 32px;
+      height: 1px;
+      background: var(--border-2);
+      margin: 8px auto;
+    }
+
+    /* Messages */
+    .msg-row {
+      display: flex;
+      gap: 12px;
+      max-width: 720px;
+    }
+
+    .msg-row.user { flex-direction: row-reverse; align-self: flex-end; }
+    .msg-row.bot  { align-self: flex-start; }
+
+    .msg-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .msg-row.user .msg-avatar {
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .msg-row.bot .msg-avatar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink-3);
+      font-size: 12px;
+    }
+
+    .msg-content { max-width: 600px; }
+
+    .msg-bubble {
+      padding: 12px 16px;
+      border-radius: var(--radius-lg);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .msg-row.user .msg-bubble {
+      background: var(--ink);
+      color: #fff;
+      border-top-right-radius: 3px;
+    }
+
+    .msg-row.bot .msg-bubble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      border-top-left-radius: 3px;
+    }
+
+    .msg-sources {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .msg-source-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 7px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--ink-3);
+    }
+
+    .msg-time {
+      font-size: 10px;
+      color: var(--ink-3);
+      margin-top: 5px;
+      font-family: var(--mono);
+    }
+
+    .msg-row.user .msg-time { text-align: right; }
+
+    /* Typing */
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+      padding: 4px 0;
+    }
+
+    .typing-dots span {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--ink-3);
+      animation: dot-bounce 1.2s infinite;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes dot-bounce {
+      0%,80%,100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    /* Input bar */
+    .input-bar {
+      padding: 16px 40px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .input-wrap {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--bg);
+      transition: border-color 0.15s;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .input-wrap:focus-within { border-color: var(--accent); }
+
+    #chat-input {
+      flex: 1;
+      padding: 11px 14px;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.6;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    #chat-input::placeholder { color: var(--ink-3); }
+
+    #send-btn {
+      width: 34px;
+      height: 34px;
+      margin: 6px 6px 6px 0;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--ink);
+      color: #fff;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #send-btn:hover { background: #2a2a2a; }
+    #send-btn:disabled { background: var(--border-2); cursor: not-allowed; }
+
+    #send-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: #fff;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 800px) {
+      .auth-left { display: none; }
+      .cap-grid { grid-template-columns: repeat(2, 1fr); }
+      .sidebar { width: 220px; }
+      .messages { padding: 20px 16px; }
+      .input-bar { padding: 12px 16px; }
+    }
+
+    @media (max-width: 560px) {
+      .cap-grid { grid-template-columns: 1fr; }
+      .chat-body { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); max-height: 200px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     AUTH SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-left">
+    <div class="auth-wordmark">Retrieval</div>
+    <div>
+      <div class="auth-headline">
+        Ask questions.<br>
+        <strong>Get answers</strong><br>from your documents.
+      </div>
+      <div class="auth-tagline">
+        Connect PDFs, documentation, and web sources into a single knowledge base. Query it in plain language with citations back to the source.
+      </div>
+    </div>
+    <div class="auth-footnote">LangChain · FAISS · Groq Llama 3</div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signin" onclick="switchTab('signin')">Sign in</button>
+        <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button>
+      </div>
+
+      <!-- Sign in -->
+      <form class="auth-form" id="form-signin" onsubmit="handleSignin(event)">
+        <div class="global-error" id="signin-error"></div>
+        <div class="field">
+          <label for="si-email">Email address</label>
+          <input type="email" id="si-email" placeholder="you@example.com" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label for="si-password">Password</label>
+          <input type="password" id="si-password" placeholder="Your password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="auth-submit">Sign in</button>
+      </form>
+
+      <!-- Sign up -->
+      <form class="auth-form hidden" id="form-signup" onsubmit="handleSignup(event)">
+        <div class="global-error" id="signup-error"></div>
+        <div class="field">
+          <label for="su-name">Full name</label>
+          <input type="text" id="su-name" placeholder="Kanan Sharma" autocomplete="name" required />
+          <span class="field-error" id="su-name-err">Name must be at least 2 characters.</span>
+        </div>
+        <div class="field">
+          <label for="su-email">Email address</label>
+          <input type="email" id="su-email" placeholder="you@example.com" autocomplete="email" required />
+          <span class="field-error" id="su-email-err">Enter a valid email address.</span>
+        </div>
+        <div class="field">
+          <label for="su-password">Password</label>
+          <input type="password" id="su-password" placeholder="At least 8 characters" autocomplete="new-password" required />
+          <span class="field-error" id="su-pw-err">Password must be at least 8 characters.</span>
+        </div>
+        <button type="submit" class="auth-submit">Create account</button>
+        <div class="auth-divider">Your data stays in your session only.</div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     CAPABILITY SELECTION SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="capability-screen" class="hidden">
+  <div class="cap-header">
+    <div class="cap-eyebrow">Configuration</div>
+    <div class="cap-title">What should the chatbot <span>focus on?</span></div>
+    <div class="cap-sub">Select one or more. Your preference is applied to every session.</div>
+  </div>
+
+  <div class="cap-grid">
+    <div class="cap-card" data-cap="pdf" onclick="toggleCap(this)">
+      <div class="cap-card-check"></div>
+      <div class="cap-card-tag">Source type</div>
+      <div class="cap-card-title">PDF Documents</div>
+      <div class="cap-card-desc">Upload and query PDFs — research papers, reports, manuals, contracts.</div>
+    </div>
+    <div class="cap-card" data-cap="url" onclick="toggleCap(this)">
+      <div class="cap-card-check"></div>
+      <div class="cap-card-tag">Source type</div>
+      <div class="cap-card-title">Web Pages</div>
+      <div class="cap-card-desc">Paste a URL and the chatbot indexes and retrieves from that page's content.</div>
+    </div>
+    <div class="cap-card" data-cap="multi" onclick="toggleCap(this)">
+      <div class="cap-card-check"></div>
+      <div class="cap-card-tag">Source type</div>
+      <div class="cap-card-title">Multiple Sources</div>
+      <div class="cap-card-desc">Cross-query PDFs and URLs together in one session with unified retrieval.</div>
+    </div>
+    <div class="cap-card" data-cap="memory" onclick="toggleCap(this)">
+      <div class="cap-card-check"></div>
+      <div class="cap-card-tag">Behaviour</div>
+      <div class="cap-card-title">Conversation Memory</div>
+      <div class="cap-card-desc">Chatbot remembers earlier questions in the session for follow-up queries.</div>
+    </div>
+    <div class="cap-card" data-cap="citations" onclick="toggleCap(this)">
+      <div class="cap-card-check"></div>
+      <div class="cap-card-tag">Behaviour</div>
+      <div class="cap-card-title">Source Citations</div>
+      <div class="cap-card-desc">Every answer includes references to the exact document it retrieved from.</div>
+    </div>
+    <div class="cap-card" data-cap="strict" onclick="toggleCap(this)">
+      <div class="cap-card-check"></div>
+      <div class="cap-card-tag">Behaviour</div>
+      <div class="cap-card-title">Strict Retrieval Mode</div>
+      <div class="cap-card-desc">Answers are limited to content found in your sources. No external knowledge used.</div>
+    </div>
+  </div>
+
+  <div class="cap-action">
+    <button class="cap-continue" id="cap-continue-btn" onclick="enterChat()" disabled>
+      Continue
+    </button>
+    <span class="cap-selection-note" id="cap-note">Select at least one option.</span>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     CHAT SCREEN
+════════════════════════════════════════════════════════════ -->
+<div id="chat-screen" class="hidden">
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-wordmark">Retrieval</div>
+      <div class="topbar-sep"></div>
+      <div class="active-caps" id="active-caps-display"></div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip">
+        <div class="user-avatar" id="user-avatar-top">K</div>
+        <span id="user-name-top">Kanan</span>
+      </div>
+      <button class="topbar-btn" onclick="goToCapabilities()">Change focus</button>
+      <button class="topbar-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="chat-body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Upload PDF</div>
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="pdf-input" accept=".pdf" multiple />
+          <div class="dropzone-title">Drop files here</div>
+          <div class="dropzone-sub">or click to browse</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Add URL</div>
+        <div class="url-field">
+          <input id="url-input" type="url" placeholder="https://..." />
+          <button class="url-add-btn" onclick="addURL()">Add</button>
+        </div>
+      </div>
+
+      <div class="sidebar-sources" id="sidebar-sources">
+        <div class="sidebar-label">Indexed sources</div>
+        <div id="sources-list">
+          <div class="no-sources-note">No sources indexed yet.</div>
+        </div>
+      </div>
+
+      <div class="status-strip" id="status-strip">
+        <div class="status-dot"></div>
+        <span id="status-text">Ready</span>
+      </div>
+    </div>
+
+    <!-- Chat main -->
+    <div class="chat-main">
+      <div class="messages" id="messages">
+        <div class="empty-chat" id="empty-chat">
+          <div class="empty-chat-label">No conversation yet</div>
+          <div class="empty-chat-line"></div>
+          <div class="empty-chat-sub">Index a document or URL using the panel on the left, then ask a question below.</div>
+        </div>
+      </div>
+      <div class="input-bar">
+        <div class="input-wrap">
+          <textarea id="chat-input" rows="1" placeholder="Ask a question about your documents..."></textarea>
+          <button id="send-btn" onclick="sendMessage()" title="Send">
+            <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1.5 8L14.5 1.5L8 14.5L6.5 9.5L1.5 8Z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     SCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+  const API = "http://127.0.0.1:8000"; // replace after deploy
+
+  // ── App state ────────────────────────────────────────────────
+  let user = null;           // { name, email, initials }
+  let selectedCaps = new Set();
+  let sessionId = null;
+  let sources = [];
+  let isBusy = false;
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function $(id) { return document.getElementById(id); }
+
+  function show(id) { $(id).classList.remove("hidden"); }
+  function hide(id) { $(id).classList.add("hidden"); }
+
+  function now() {
+    return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function initials(name) {
+    return name.trim().split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  }
+
+  // ── Auth tab switch ─────────────────────────────────────────
+  function switchTab(tab) {
+    $("tab-signin").classList.toggle("active", tab === "signin");
+    $("tab-signup").classList.toggle("active", tab === "signup");
+    $("form-signin").classList.toggle("hidden", tab !== "signin");
+    $("form-signup").classList.toggle("hidden", tab !== "signup");
+  }
+
+  function showAuthError(formId, msg) {
+    const el = $(`${formId}-error`);
+    el.textContent = msg;
+    el.classList.add("visible");
+  }
+
+  function clearAuthError(formId) {
+    const el = $(`${formId}-error`);
+    el.textContent = "";
+    el.classList.remove("visible");
+  }
+
+  // ── Sign in ──────────────────────────────────────────────────
+  function handleSignin(e) {
+    e.preventDefault();
+    clearAuthError("signin");
+    const email = $("si-email").value.trim();
+    const pw    = $("si-password").value;
+
+    const stored = JSON.parse(localStorage.getItem("retrieval_users") || "{}");
+    if (!stored[email] || stored[email].password !== pw) {
+      showAuthError("signin", "Incorrect email or password.");
+      return;
+    }
+    user = { name: stored[email].name, email, initials: initials(stored[email].name) };
+    goToCapabilities();
+  }
+
+  // ── Sign up ──────────────────────────────────────────────────
+  function handleSignup(e) {
+    e.preventDefault();
+    clearAuthError("signup");
+    let valid = true;
+
+    const name = $("su-name").value.trim();
+    const email = $("su-email").value.trim();
+    const pw   = $("su-password").value;
+
+    if (name.length < 2) {
+      $("su-name-err").classList.add("visible"); valid = false;
+    } else { $("su-name-err").classList.remove("visible"); }
+
+    if (!email.includes("@") || !email.includes(".")) {
+      $("su-email-err").classList.add("visible"); valid = false;
+    } else { $("su-email-err").classList.remove("visible"); }
+
+    if (pw.length < 8) {
+      $("su-pw-err").classList.add("visible"); valid = false;
+    } else { $("su-pw-err").classList.remove("visible"); }
+
+    if (!valid) return;
+
+    const stored = JSON.parse(localStorage.getItem("retrieval_users") || "{}");
+    if (stored[email]) {
+      showAuthError("signup", "An account with this email already exists.");
+      return;
+    }
+
+    stored[email] = { name, password: pw };
+    localStorage.setItem("retrieval_users", JSON.stringify(stored));
+
+    user = { name, email, initials: initials(name) };
+    goToCapabilities();
+  }
+
+  // ── Capability screen ────────────────────────────────────────
+  function goToCapabilities() {
+    hide("auth-screen");
+    hide("chat-screen");
+    show("capability-screen");
+    selectedCaps.clear();
+    document.querySelectorAll(".cap-card.selected").forEach(c => c.classList.remove("selected"));
+    updateCapContinue();
+  }
+
+  function toggleCap(card) {
+    const cap = card.dataset.cap;
+    if (selectedCaps.has(cap)) {
+      selectedCaps.delete(cap);
+      card.classList.remove("selected");
+    } else {
+      selectedCaps.add(cap);
+      card.classList.add("selected");
+    }
+    updateCapContinue();
+  }
+
+  function updateCapContinue() {
+    const btn  = $("cap-continue-btn");
+    const note = $("cap-note");
+    const n    = selectedCaps.size;
+    btn.disabled = n === 0;
+    note.textContent = n === 0
+      ? "Select at least one option."
+      : `${n} option${n > 1 ? "s" : ""} selected`;
+  }
+
+  // ── Enter chat ───────────────────────────────────────────────
+  function enterChat() {
+    hide("capability-screen");
+    show("chat-screen");
+
+    // Set user info in topbar
+    $("user-name-top").textContent = user.name.split(" ")[0];
+    $("user-avatar-top").textContent = user.initials;
+
+    // Render active capability pills
+    const pillContainer = $("active-caps-display");
+    pillContainer.innerHTML = "";
+    const capLabels = {
+      pdf: "PDF", url: "Web pages", multi: "Multi-source",
+      memory: "Memory", citations: "Citations", strict: "Strict mode"
+    };
+    selectedCaps.forEach(c => {
+      const pill = document.createElement("div");
+      pill.className = "cap-pill";
+      pill.textContent = capLabels[c] || c;
+      pillContainer.appendChild(pill);
+    });
+  }
+
+  // ── Sign out ─────────────────────────────────────────────────
+  function signOut() {
+    user = null; sessionId = null; sources = [];
+    hide("chat-screen"); hide("capability-screen");
+    show("auth-screen");
+    $("messages").innerHTML = `<div class="empty-chat" id="empty-chat">
+      <div class="empty-chat-label">No conversation yet</div>
+      <div class="empty-chat-line"></div>
+      <div class="empty-chat-sub">Index a document or URL using the panel on the left, then ask a question below.</div>
+    </div>`;
+    renderSources();
+  }
+
+  // ── Status ───────────────────────────────────────────────────
+  function setStatus(msg, type = "") {
+    const strip = $("status-strip");
+    strip.className = "status-strip " + type;
+    $("status-text").textContent = msg;
+  }
+
+  // ── Sources ──────────────────────────────────────────────────
+  function renderSources() {
+    const el = $("sources-list");
+    if (!sources.length) {
+      el.innerHTML = `<div class="no-sources-note">No sources indexed yet.</div>`;
+      return;
+    }
+    el.innerHTML = sources.map(s => {
+      const isUrl = s.startsWith("http");
+      const label = isUrl ? s.replace(/^https?:\/\//, "").slice(0, 40) : s;
+      const type  = isUrl ? "URL" : "PDF";
+      return `<div class="source-item">
+        <div class="source-dot"></div>
+        <div>
+          <div class="source-name">${label}</div>
+          <div class="source-type">${type}</div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // ── Ingest ───────────────────────────────────────────────────
+  async function ingestPDF(file) {
+    setStatus(`Uploading ${file.name}...`, "loading");
+    const fd = new FormData();
+    fd.append("file", file);
+    if (sessionId) fd.append("session_id", sessionId);
+    const res  = await fetch(`${API}/ingest/pdf`, { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Upload failed");
+    return data;
+  }
+
+  async function ingestURL(url) {
+    setStatus(`Fetching ${url}...`, "loading");
+    const body = { urls: [url], session_id: sessionId };
+    const res  = await fetch(`${API}/ingest/url`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "URL fetch failed");
+    return data;
+  }
+
+  function handleIngestResult(data) {
+    sessionId = data.session_id;
+    sources   = data.sources;
+    renderSources();
+    setStatus(`Indexed ${data.chunk_count} chunks`, "success");
+    setTimeout(() => setStatus("Ready"), 3000);
+  }
+
+  // ── PDF upload ───────────────────────────────────────────────
+  $("pdf-input").addEventListener("change", async () => {
+    const files = Array.from($("pdf-input").files);
+    for (const f of files) {
+      try { handleIngestResult(await ingestPDF(f)); }
+      catch (e) { setStatus(e.message, "error"); }
+    }
+    $("pdf-input").value = "";
+  });
+
+  const dz = $("dropzone");
+  dz.addEventListener("dragover", e => { e.preventDefault(); dz.classList.add("drag-over"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+  dz.addEventListener("drop", e => {
+    e.preventDefault(); dz.classList.remove("drag-over");
+    const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith(".pdf"));
+    if (!files.length) return;
+    files.forEach(async f => {
+      try { handleIngestResult(await ingestPDF(f)); }
+      catch (e) { setStatus(e.message, "error"); }
+    });
+  });
+
+  // ── URL ingest ───────────────────────────────────────────────
+  async function addURL() {
+    const url = $("url-input").value.trim();
+    if (!url) return;
+    try {
+      handleIngestResult(await ingestURL(url));
+      $("url-input").value = "";
+    } catch (e) { setStatus(e.message, "error"); }
+  }
+
+  $("url-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); addURL(); }
+  });
+
+  // ── Chat ─────────────────────────────────────────────────────
+  function removeEmpty() {
+    const ec = $("empty-chat");
+    if (ec) ec.remove();
+  }
+
+  function appendMsg(role, text, srcDocs = []) {
+    removeEmpty();
+    const msgs = $("messages");
+    const row  = document.createElement("div");
+    row.className = `msg-row ${role}`;
+
+    const av   = document.createElement("div");
+    av.className = "msg-avatar";
+    av.textContent = role === "user" ? user.initials : "R";
+
+    const content = document.createElement("div");
+    content.className = "msg-content";
+
+    const bubble = document.createElement("div");
+    bubble.className = "msg-bubble";
+    bubble.innerHTML = text.replace(/\n/g, "<br>");
+    content.appendChild(bubble);
+
+    if (role === "bot" && srcDocs.length) {
+      const srcs = document.createElement("div");
+      srcs.className = "msg-sources";
+      srcs.innerHTML = srcDocs.map(s => {
+        const label = s.startsWith("http") ? s.replace(/^https?:\/\//, "").split("/")[0] : s;
+        return `<span class="msg-source-tag">${label}</span>`;
+      }).join("");
+      content.appendChild(srcs);
+    }
+
+    const t = document.createElement("div");
+    t.className = "msg-time";
+    t.textContent = now();
+    content.appendChild(t);
+
+    row.appendChild(av);
+    row.appendChild(content);
+    msgs.appendChild(row);
+    msgs.scrollTop = msgs.scrollHeight;
+    return row;
+  }
+
+  function appendTyping() {
+    removeEmpty();
+    const msgs = $("messages");
+    const row  = document.createElement("div");
+    row.className = "msg-row bot";
+    row.id = "typing-row";
+
+    const av = document.createElement("div");
+    av.className = "msg-avatar";
+    av.textContent = "R";
+
+    const content = document.createElement("div");
+    content.className = "msg-content";
+
+    const bubble = document.createElement("div");
+    bubble.className = "msg-bubble";
+    bubble.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+    content.appendChild(bubble);
+
+    row.appendChild(av);
+    row.appendChild(content);
+    msgs.appendChild(row);
+    msgs.scrollTop = msgs.scrollHeight;
+    return row;
+  }
+
+  async function sendMessage() {
+    const input = $("chat-input");
+    const q = input.value.trim();
+    if (!q || isBusy) return;
+    if (!sessionId) { setStatus("Index a document first.", "error"); return; }
+
+    isBusy = true;
+    $("send-btn").disabled = true;
+    input.value = "";
+    input.style.height = "auto";
+
+    appendMsg("user", q);
+    const typing = appendTyping();
+
+    try {
+      const buildSystemContext = () => {
+        const parts = [];
+        if (selectedCaps.has("strict"))   parts.push("Answer only using the provided documents. Do not use outside knowledge.");
+        if (selectedCaps.has("citations")) parts.push("Always cite the document name or URL the answer came from.");
+        if (selectedCaps.has("memory"))   parts.push("Take into account the full conversation history when answering.");
+        return parts.join(" ");
+      };
+
+      const res  = await fetch(`${API}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          question: q,
+          system_context: buildSystemContext()
+        })
+      });
+      const data = await res.json();
+      typing.remove();
+      if (!res.ok) throw new Error(data.detail || "Error");
+      appendMsg("bot", data.answer, selectedCaps.has("citations") ? data.source_docs : []);
+    } catch (e) {
+      typing.remove();
+      appendMsg("bot", "Request failed: " + e.message);
+      setStatus(e.message, "error");
+    } finally {
+      isBusy = false;
+      $("send-btn").disabled = false;
+      input.focus();
+    }
+  }
+
+  $("send-btn").addEventListener("click", sendMessage);
+  $("chat-input").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  $("chat-input").addEventListener("input", function () {
+    this.style.height = "auto";
+    this.style.height = Math.min(this.scrollHeight, 140) + "px";
+  });
+</script>
+</body>
+</html>
